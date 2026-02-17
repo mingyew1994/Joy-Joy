@@ -1,227 +1,163 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Birthday Messages</title>
-
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Daily Encouragement</title>
   <style>
-    :root {
-      --card-bg: rgba(255,255,255,.88);
-      --text: #000;
-    }
-
-    * { box-sizing: border-box; }
-
     body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      background: url("background.jpg");
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      /* Fixed background from GitHub */
+      background: url('background.jpg') no-repeat center center fixed;
       background-size: cover;
-      background-position: center;
-      background-attachment: fixed;
-      padding: 32px 16px;
-      color: var(--text);
-    }
-    
-    .wrap {
-      max-width: 900px;
-      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      padding: 20px;
     }
 
-    .card {
-      background: rgba(255,255,255,0.9);
-      border-radius: 18px;
-      padding: 24px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.15);
-      backdrop-filter: blur(2px);
-    }
-
-    h1 {
+    .box {
+      background: rgba(255, 255, 255, 0.90);
+      border-radius: 16px;
+      padding: 40px;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
       text-align: center;
+      backdrop-filter: blur(5px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Style for the cycling Firebase image */
+    #featured-image {
+      width: 100%;
+      max-height: 300px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 25px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      display: none; /* Hidden until loaded */
+    }
+
+    h2 {
+      color: #2563eb;
+      font-size: 1.5rem;
       margin-top: 0;
       margin-bottom: 20px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
     }
 
-    /* Code Entry */
-    #code-entry {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    #code-input {
-      padding: 10px 14px;
-      font-size: 16px;
-      border-radius: 999px;
-      border: 1px solid #ccc;
-      width: 220px;
-      text-align: center;
-    }
-
-    #code-btn {
-      margin-left: 8px;
-      padding: 10px 16px;
-      border-radius: 999px;
-      border: none;
-      cursor: pointer;
-      font-weight: 600;
-      background: #111827;
-      color: #fff;
-    }
-
-    /* Buttons */
-    .buttons {
-      display: none;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 16px;
-    }
-
-    .btn {
-      padding: 10px 14px;
-      border-radius: 999px;
-      border: none;
-      cursor: pointer;
-      font-weight: 600;
-      background: #e5e7eb;
-    }
-
-    .btn:hover {
-      background: #d1d5db;
-    }
-
-    /* Message */
-    .message {
-      text-align: center;
-      font-size: clamp(18px, 2.2vw, 22px);
+    p#quote {
+      font-size: 1.25em;
+      color: #374151;
       line-height: 1.6;
-      margin-top: 12px;
+      font-style: italic; /* Added italic for verses */
+      margin-bottom: 10px;
     }
 
-    /* Birthday Image */
-    #birthday-image {
-      display: none;
-      width: 100%;
-      max-width: 500px;
-      margin: 24px auto 0;
-      border-radius: 16px;
-      box-shadow: 0 8px 20px rgba(0,0,0,.15);
+    .ref {
+      margin-top: 10px;
+      font-weight: bold;
+      color: #4b5563;
+      font-size: 1rem;
+    }
+
+    .error {
+      color: #b91c1c;
+      font-size: 0.9em;
+      margin-top: 15px;
     }
   </style>
 </head>
-
 <body>
-  <div class="wrap">
-    <div class="card">
-      <h1 id="page-title">Birthday Messages</h1>
 
-      <!-- Code Entry -->
-      <div id="code-entry">
-        <input id="code-input" placeholder="Enter your code" />
-        <button id="code-btn">Continue</button>
-      </div>
+  <div class="box">
+    <h2>Today's Word</h2>
+    
+    <img id="featured-image" src="" alt="Daily Photo" />
 
-      <!-- Name Buttons -->
-      <div class="buttons" id="buttons"></div>
-
-      <!-- Message -->
-      <div class="message" id="message-text">
-        Enter your code to begin.
-      </div>
-
-      <!-- Birthday Image -->
-      <img id="birthday-image" alt="Birthday photo" />
-    </div>
+    <p id="quote">Loading...</p>
+    <div class="ref" id="author"></div>
+    <div class="error" id="error"></div>
   </div>
 
-  <!-- Firebase + Logic -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    /* 🔧 REPLACE WITH YOUR FIREBASE CONFIG */
+    // --- YOUR REAL CONFIG ---
     const firebaseConfig = {
-      apiKey: "AIzaSyDjO04p8cewcjrciLwulppViHKgiAhNJxk",
-      authDomain: "cell-birthday-messages.firebaseapp.com",
-      projectId: "cell-birthday-messages"
+      apiKey: "AIzaSyCZkXMT0Hl-vyjC_ZD0Uzp6x5Q3ER4068I",
+      authDomain: "joy-joy-90bfd.firebaseapp.com",
+      databaseURL: "https://joy-joy-90bfd-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "joy-joy-90bfd",
+      storageBucket: "joy-joy-90bfd.firebasestorage.app",
+      messagingSenderId: "73763462084",
+      appId: "1:73763462084:web:f959558f1fada2c01a2291",
+      measurementId: "G-QLS5T56060"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const buttonsDiv = document.getElementById("buttons");
-    const messageText = document.getElementById("message-text");
-    const codeEntry = document.getElementById("code-entry");
-    const pageTitle = document.getElementById("page-title");
-    const birthdayImage = document.getElementById("birthday-image");
+    let imageUrls = [];
+    const imgElement = document.getElementById("featured-image");
 
-    let messages = {};
-    let imageUrl = null;
+    // 1. Load Images from Firestore
+    async function loadImages() {
+      try {
+        // Change "photos" to whatever you named your collection in Firebase
+        const querySnapshot = await getDocs(collection(db, "photos"));
+        
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          if (data.url) imageUrls.push(data.url);
+        });
 
-    /* Load messages using CODE */
-    async function loadByCode(code) {
-      const ref = doc(db, "messageBatches", code);
-      const snap = await getDoc(ref);
-
-      if (!snap.exists()) {
-        alert("Invalid code");
-        return;
+        if (imageUrls.length > 0) {
+          cycleImage();
+          setInterval(cycleImage, 10000); // 10 seconds
+        }
+      } catch (e) {
+        console.error("Error loading images:", e);
       }
-
-      const data = snap.data();
-      messages = data.messages || {};
-
-      /* Update title */
-      if (data.recipient) {
-        pageTitle.textContent = `Happy Birthday ${data.recipient}! 🎉`;
-      }
-
-      /* Load image */
-      imageUrl = data.imageUrl || null;
-      if (imageUrl) {
-        birthdayImage.src = imageUrl;
-        birthdayImage.style.display = "block";
-      } else {
-        birthdayImage.style.display = "none";
-      }
-
-      showButtonsFromFirebase();
-      messageText.textContent = "Select a name to read their message.";
     }
 
-    /* Create buttons dynamically */
-    function showButtonsFromFirebase() {
-      buttonsDiv.innerHTML = "";
-      buttonsDiv.style.display = "flex";
-      codeEntry.style.display = "none";
-
-      const names = Object.keys(messages).sort((a, b) =>
-        a.localeCompare(b)
-      );
-
-      names.forEach(name => {
-        const btn = document.createElement("button");
-        btn.className = "btn";
-        btn.textContent = name;
-
-        btn.onclick = () => {
-          messageText.textContent = messages[name];
-        };
-
-        buttonsDiv.appendChild(btn);
-      });
+    function cycleImage() {
+      if (imageUrls.length === 0) return;
+      const randomIndex = Math.floor(Math.random() * imageUrls.length);
+      imgElement.src = imageUrls[randomIndex];
+      imgElement.style.display = "block";
     }
 
-    document.getElementById("code-btn").onclick = () => {
-      const code = document.getElementById("code-input").value.trim();
-      if (code) loadByCode(code);
-    };
+    // 2. Load Quotes from JSON
+    async function loadQuote() {
+      const quoteEl = document.getElementById("quote");
+      const authorEl = document.getElementById("author");
+
+      try {
+        const res = await fetch("quotes.json");
+        if (!res.ok) throw new Error("File not found");
+        
+        const quotes = await res.json();
+        const randomIndex = Math.floor(Math.random() * quotes.length);
+        const q = quotes[randomIndex];
+
+        quoteEl.textContent = `"${q.quote}"`; // Added quotes around the text
+        authorEl.textContent = "— " + q.author;
+      } catch (e) {
+        quoteEl.textContent = "Unable to load the verse.";
+        console.error(e);
+      }
+    }
+
+    loadImages();
+    loadQuote();
   </script>
 </body>
 </html>
-
-
-
-
