@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Birthday Messages</title>
+
+  <style>
+    :root {
+      --card-bg: rgba(255,255,255,.88);
+      --text: #000;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: url("background.jpg");
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      padding: 32px 16px;
+      color: var(--text);
+    }
+    
+    .wrap {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.9);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.15);
+      backdrop-filter: blur(2px);
+    }
+
+    h1 {
+      text-align: center;
+      margin-top: 0;
+      margin-bottom: 20px;
+    }
+
+    /* Code Entry */
+    #code-entry {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    #code-input {
+      padding: 10px 14px;
+      font-size: 16px;
+      border-radius: 999px;
+      border: 1px solid #ccc;
+      width: 220px;
+      text-align: center;
+    }
+
+    #code-btn {
+      margin-left: 8px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      background: #111827;
+      color: #fff;
+    }
+
+    /* Buttons */
+    .buttons {
+      display: none;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .btn {
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      background: #e5e7eb;
+    }
+
+    .btn:hover {
+      background: #d1d5db;
+    }
+
+    /* Message */
+    .message {
+      text-align: center;
+      font-size: clamp(18px, 2.2vw, 22px);
+      line-height: 1.6;
+      margin-top: 12px;
+    }
+
+    /* Birthday Image */
+    #birthday-image {
+      display: none;
+      width: 100%;
+      max-width: 500px;
+      margin: 24px auto 0;
+      border-radius: 16px;
+      box-shadow: 0 8px 20px rgba(0,0,0,.15);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1 id="page-title">Birthday Messages</h1>
+
+      <!-- Code Entry -->
+      <div id="code-entry">
+        <input id="code-input" placeholder="Enter your code" />
+        <button id="code-btn">Continue</button>
+      </div>
+
+      <!-- Name Buttons -->
+      <div class="buttons" id="buttons"></div>
+
+      <!-- Message -->
+      <div class="message" id="message-text">
+        Enter your code to begin.
+      </div>
+
+      <!-- Birthday Image -->
+      <img id="birthday-image" alt="Birthday photo" />
+    </div>
+  </div>
+
+  <!-- Firebase + Logic -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+    /* 🔧 REPLACE WITH YOUR FIREBASE CONFIG */
+    const firebaseConfig = {
+      apiKey: "AIzaSyDjO04p8cewcjrciLwulppViHKgiAhNJxk",
+      authDomain: "cell-birthday-messages.firebaseapp.com",
+      projectId: "cell-birthday-messages"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const buttonsDiv = document.getElementById("buttons");
+    const messageText = document.getElementById("message-text");
+    const codeEntry = document.getElementById("code-entry");
+    const pageTitle = document.getElementById("page-title");
+    const birthdayImage = document.getElementById("birthday-image");
+
+    let messages = {};
+    let imageUrl = null;
+
+    /* Load messages using CODE */
+    async function loadByCode(code) {
+      const ref = doc(db, "messageBatches", code);
+      const snap = await getDoc(ref);
+
+      if (!snap.exists()) {
+        alert("Invalid code");
+        return;
+      }
+
+      const data = snap.data();
+      messages = data.messages || {};
+
+      /* Update title */
+      if (data.recipient) {
+        pageTitle.textContent = `Happy Birthday ${data.recipient}! 🎉`;
+      }
+
+      /* Load image */
+      imageUrl = data.imageUrl || null;
+      if (imageUrl) {
+        birthdayImage.src = imageUrl;
+        birthdayImage.style.display = "block";
+      } else {
+        birthdayImage.style.display = "none";
+      }
+
+      showButtonsFromFirebase();
+      messageText.textContent = "Select a name to read their message.";
+    }
+
+    /* Create buttons dynamically */
+    function showButtonsFromFirebase() {
+      buttonsDiv.innerHTML = "";
+      buttonsDiv.style.display = "flex";
+      codeEntry.style.display = "none";
+
+      const names = Object.keys(messages).sort((a, b) =>
+        a.localeCompare(b)
+      );
+
+      names.forEach(name => {
+        const btn = document.createElement("button");
+        btn.className = "btn";
+        btn.textContent = name;
+
+        btn.onclick = () => {
+          messageText.textContent = messages[name];
+        };
+
+        buttonsDiv.appendChild(btn);
+      });
+    }
+
+    document.getElementById("code-btn").onclick = () => {
+      const code = document.getElementById("code-input").value.trim();
+      if (code) loadByCode(code);
+    };
+  </script>
+</body>
+</html>
+
+
+
+
